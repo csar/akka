@@ -104,6 +104,13 @@ final case class RoundRobinPool(
    */
   override def withFallback(other: RouterConfig): RouterConfig = this.overrideUnsetConfig(other)
 
+  /**
+   * [[akka.actor.Props]] for a round-robin pool router based on the settings defined by
+   * this instance and the supplied [[akka.actor.Props]] for the routees created by the
+   * router.
+   */
+  def props(routeeProps: Props): Props = routeeProps.withRouter(this)
+
 }
 
 /**
@@ -143,5 +150,11 @@ final case class RoundRobinNozzle(
    * router management messages
    */
   def withDispatcher(dispatcherId: String): RoundRobinNozzle = copy(routerDispatcher = dispatcherId)
+
+  /**
+   * [[akka.actor.Props]] for a round-robin nozzle router based on the settings defined by
+   * this instance.
+   */
+  def props(): Props = Props.empty.withRouter(this)
 
 }

@@ -259,6 +259,19 @@ class FromConfig(override val resizer: Option[Resizer],
 
   override val nrOfInstances: Int = 0
 
+  /**
+   * [[akka.actor.Props]] for a pool router defined in configuration and with additional settings
+   * defined by this instance and the supplied [[akka.actor.Props]] for the routees created by the
+   * router.
+   */
+  def props(routeeProps: Props): Props = routeeProps.withRouter(this)
+
+  /**
+   * [[akka.actor.Props]] for a nozzle router defined in configuration and with additional the settings
+   * defined by this.
+   */
+  def props(): Props = Props.empty.withRouter(this)
+
 }
 
 /**
@@ -268,7 +281,13 @@ class FromConfig(override val resizer: Option[Resizer],
  * router is taken in the LocalActorRefProvider based on Props.
  */
 @SerialVersionUID(1L)
-abstract class NoRouter extends RouterConfig
+abstract class NoRouter extends RouterConfig {
+  /**
+   * [[akka.actor.Props]] for an ordinary actor, unless specified as a router in configuration.
+   */
+  def props(routeeProps: Props): Props = routeeProps.withRouter(this)
+}
+
 case object NoRouter extends NoRouter {
   override def createRouter(system: ActorSystem): Router = throw new UnsupportedOperationException("NoRouter has no Router")
   /**
@@ -283,6 +302,7 @@ case object NoRouter extends NoRouter {
    * Java API: get the singleton instance
    */
   def getInstance = this
+
 }
 
 /**

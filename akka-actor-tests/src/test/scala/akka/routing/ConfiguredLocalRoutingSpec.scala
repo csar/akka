@@ -80,21 +80,21 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
   "RouterConfig" must {
 
     "be picked up from Props" in {
-      val actor = system.actorOf(Props(new Actor {
+      val actor = system.actorOf(RoundRobinPool(12).props(routeeProps = Props(new Actor {
         def receive = {
           case "get" ⇒ sender ! context.props
         }
-      }).withRouter(RoundRobinPool(12)), "someOther")
+      })), "someOther")
       routerConfig(actor) must be === RoundRobinPool(12)
       Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
 
     "be overridable in config" in {
-      val actor = system.actorOf(Props(new Actor {
+      val actor = system.actorOf(RoundRobinPool(12).props(routeeProps = Props(new Actor {
         def receive = {
           case "get" ⇒ sender ! context.props
         }
-      }).withRouter(RoundRobinPool(12)), "config")
+      })), "config")
       routerConfig(actor) must be === RandomPool(4)
       Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
@@ -131,15 +131,15 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
 
     "fail with an exception if not correct" in {
       intercept[ConfigurationException] {
-        system.actorOf(Props.empty.withRouter(FromConfig))
+        system.actorOf(FromConfig.props())
       }
     }
 
     "not get confused when trying to wildcard-configure children" in {
-      val router = system.actorOf(Props(new Actor {
+      val router = system.actorOf(FromConfig.props(routeeProps = Props(new Actor {
         testActor ! self
         def receive = { case _ ⇒ }
-      }).withRouter(FromConfig), "weird")
+      })), "weird")
       val recv = Set() ++ (for (_ ← 1 to 3) yield expectMsgType[ActorRef])
       val expc = Set('a', 'b', 'c') map (i ⇒ system.actorFor("/user/weird/$" + i))
       recv must be(expc)
@@ -147,7 +147,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
     }
 
     "support custom router" in {
-      val myrouter = system.actorOf(Props.empty.withRouter(FromConfig), "myrouter")
+      val myrouter = system.actorOf(FromConfig.props(), "myrouter")
       myrouter ! "foo"
       expectMsg("bar")
     }
