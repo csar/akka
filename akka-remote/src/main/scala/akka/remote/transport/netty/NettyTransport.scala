@@ -277,17 +277,22 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
   private val clientChannelFactory: ChannelFactory = TransportMode match {
     case Tcp ⇒
       val boss, worker = createExecutorService()
+      // We need to create a HashedWheelTimer here since Netty creates one with a thread that
+      // doesn't respect the akka.daemonic setting
       new NioClientSocketChannelFactory(boss, 1, new NioWorkerPool(worker, ClientSocketWorkerPoolSize),
         new HashedWheelTimer(system.threadFactory))
     case Udp ⇒
+      // This does not create a HashedWheelTimer internally
       new NioDatagramChannelFactory(createExecutorService(), ClientSocketWorkerPoolSize)
   }
 
   private val serverChannelFactory: ChannelFactory = TransportMode match {
     case Tcp ⇒
       val boss, worker = createExecutorService()
+      // This does not create a HashedWheelTimer internally
       new NioServerSocketChannelFactory(boss, worker, ServerSocketWorkerPoolSize)
     case Udp ⇒
+      // This does not create a HashedWheelTimer internally
       new NioDatagramChannelFactory(createExecutorService(), ServerSocketWorkerPoolSize)
   }
 
